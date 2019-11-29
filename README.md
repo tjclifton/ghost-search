@@ -1,7 +1,7 @@
 ![Version](https://img.shields.io/badge/Version-0.6.0-blue.svg)
 ![MinGhostVersion](https://img.shields.io/badge/Min%20Ghost%20v.-%3E%3D%202.10-red.svg)
 
-# ghostHunter
+# Ghost Search
 
 **Original developer:** [jamal@i11u.me](mailto:jamal@i11u.me)
 
@@ -47,6 +47,8 @@ To use this version of ghostHunter, you'll need to create a Custom Integration a
 ```txt
 <script>
   var ghosthunter_key = 'PASTE_THE_GENERATED_KEY_HERE';
+  //optional: set your custom ghost_root url, default is `"/ghost/api/v2"`
+  var ghost_root_url = "/ghost/api/v2"
 </script>
 ```
 
