@@ -272,6 +272,9 @@
 				}
 				this.field('pubDate');
 				this.field('tag');
+
+        this.metadataWhitelist = ['position'];
+
 				idxSrc.forEach(function (arrayItem) {
 					// console.log("start indexing an item: " + arrayItem.id);
 					// Track the latest value of updated_at,  to stash in localStorage
@@ -303,6 +306,7 @@
 					me.blogData[arrayItem.id] = {
 						title: arrayItem.title,
 						description: arrayItem.custom_excerpt,
+            plainText: parsedData.plaintext,
 						pubDate: prettyDate(parsedData.pubDate),
 						link: localUrl,
 						tags: tag_arr
@@ -517,9 +521,10 @@
 				// Get the blogData for the full set, for onComplete
 				for (var i = 0; i < searchResult.length; i++) {
 					var lunrref		= searchResult[i].ref;
-					var postData  	= this.blogData[lunrref];
+					var postData  	= Object.assign({}, this.blogData[lunrref]);
 					if (postData) {
 						postData.ref = lunrref;
+            postData.meta = searchResult[i].matchData.metadata;
 						resultsData.push(postData);
 					} else {
 						console.warn("ghostHunter: index/data mismatch. Ouch.");

@@ -3146,6 +3146,72 @@ lunr.QueryParser.parseBoost = function (parser) {
 
 }));
 
+  /**
+  * @link https://github.com/stiang/remove-markdown
+  */
+  function stripMd(md, options) {
+    options = options || {};
+    options.listUnicodeChar = options.hasOwnProperty('listUnicodeChar') ? options.listUnicodeChar : false;
+    options.stripListLeaders = options.hasOwnProperty('stripListLeaders') ? options.stripListLeaders : true;
+    options.gfm = options.hasOwnProperty('gfm') ? options.gfm : true;
+    options.useImgAltText = options.hasOwnProperty('useImgAltText') ? options.useImgAltText : true;
+
+    var output = md || '';
+
+    // Remove horizontal rules (stripListHeaders conflict with this rule, which is why it has been moved to the top)
+    output = output.replace(/^(-\s*?|\*\s*?|_\s*?){3,}\s*$/gm, '');
+
+    try {
+      if (options.stripListLeaders) {
+        if (options.listUnicodeChar)
+          output = output.replace(/^([\s\t]*)([\*\-\+]|\d+\.)\s+/gm, options.listUnicodeChar + ' $1');
+        else
+          output = output.replace(/^([\s\t]*)([\*\-\+]|\d+\.)\s+/gm, '$1');
+      }
+      if (options.gfm) {
+        output = output
+          // Header
+          .replace(/\n={2,}/g, '\n')
+          // Fenced codeblocks
+          .replace(/~{3}.*\n/g, '')
+          // Strikethrough
+          .replace(/~~/g, '')
+          // Fenced codeblocks
+          .replace(/`{3}.*\n/g, '');
+      }
+      output = output
+        // Remove HTML tags
+        .replace(/<[^>]*>/g, '')
+        // Remove setext-style headers
+        .replace(/^[=\-]{2,}\s*$/g, '')
+        // Remove footnotes?
+        .replace(/\[\^.+?\](\: .*?$)?/g, '')
+        .replace(/\s{0,2}\[.*?\]: .*?$/g, '')
+        // Remove images
+        .replace(/\!\[(.*?)\][\[\(].*?[\]\)]/g, options.useImgAltText ? '$1' : '')
+        // Remove inline links
+        .replace(/\[(.*?)\][\[\(].*?[\]\)]/g, '$1')
+        // Remove blockquotes
+        .replace(/^\s{0,3}>\s?/g, '')
+        // Remove reference-style links?
+        .replace(/^\s{1,2}\[(.*?)\]: (\S+)( ".*?")?\s*$/g, '')
+        // Remove atx-style headers
+        .replace(/^(\n)?\s{0,}#{1,6}\s+| {0,}(\n)?\s{0,}#{0,} {0,}(\n)?\s{0,}$/gm, '$1$2$3')
+        // Remove emphasis (repeat the line to remove double emphasis)
+        .replace(/([\*_]{1,3})(\S.*?\S{0,1})\1/g, '$2')
+        .replace(/([\*_]{1,3})(\S.*?\S{0,1})\1/g, '$2')
+        // Remove code blocks
+        .replace(/(`{3,})(.*?)\1/gm, '$2')
+        // Remove inline code
+        .replace(/`(.+?)`/g, '$1')
+        // Replace two or more newlines with exactly two? Not entirely sure this belongs here...
+        .replace(/\n{2,}/g, '\n\n');
+    } catch(e) {
+      console.error(e);
+      return md;
+    }
+    return output;
+  };
 
 	//This is the main plugin definition
 	$.fn.ghostHunter 	= function( options ) {
@@ -3207,7 +3273,7 @@ lunr.QueryParser.parseBoost = function (parser) {
 				listItems.eq(step[1]-1).remove();
 			} else {
 				var lunrref = apiData[step[2]-1].ref;
-				var postData = this.blogData[lunrref];
+				var postData = Object.assign({ref: lunrref}, this.blogData[lunrref]);
 				var html = this.format(this.result_template,postData);
 				if (step[0] === "substitute") {
 					listItems.eq(step[1]-1).replaceWith(html);
@@ -3254,6 +3320,9 @@ lunr.QueryParser.parseBoost = function (parser) {
 				}
 				this.field('pubDate');
 				this.field('tag');
+
+        this.metadataWhitelist = ['position'];
+
 				idxSrc.forEach(function (arrayItem) {
 					// console.log("start indexing an item: " + arrayItem.id);
 					// Track the latest value of updated_at,  to stash in localStorage
@@ -3278,13 +3347,14 @@ lunr.QueryParser.parseBoost = function (parser) {
 						tag 		: category
 					}
 					if  ( me.includebodysearch ){
-						parsedData.plaintext=String(arrayItem.plaintext);
+						parsedData.plaintext= stripMd(String(arrayItem.plaintext));
 					}
 					this.add(parsedData)
 					var localUrl = me.subpath + arrayItem.url
 					me.blogData[arrayItem.id] = {
 						title: arrayItem.title,
 						description: arrayItem.custom_excerpt,
+            plainText: parsedData.plaintext,
 						pubDate: prettyDate(parsedData.pubDate),
 						link: localUrl,
 						tags: tag_arr
@@ -3499,9 +3569,10 @@ lunr.QueryParser.parseBoost = function (parser) {
 				// Get the blogData for the full set, for onComplete
 				for (var i = 0; i < searchResult.length; i++) {
 					var lunrref		= searchResult[i].ref;
-					var postData  	= this.blogData[lunrref];
+					var postData  	= Object.assign({}, this.blogData[lunrref]);
 					if (postData) {
 						postData.ref = lunrref;
+            postData.meta = searchResult[i].matchData.metadata;
 						resultsData.push(postData);
 					} else {
 						console.warn("ghostHunter: index/data mismatch. Ouch.");
