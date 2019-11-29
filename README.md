@@ -1,7 +1,7 @@
 ![Version](https://img.shields.io/badge/Version-0.6.0-blue.svg)
 ![MinGhostVersion](https://img.shields.io/badge/Min%20Ghost%20v.-%3E%3D%202.10-red.svg)
 
-# ghostHunter
+# Ghost Search
 
 **Original developer:** [jamal@i11u.me](mailto:jamal@i11u.me)
 
